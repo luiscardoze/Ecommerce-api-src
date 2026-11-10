@@ -164,3 +164,4 @@ npx stryker run
 ```
 
 Eso generará un reporte en el archivo `reports/mutation.html` que pueden abrir con cualquier navegador.
+

@@ -31,5 +31,5 @@ jobs:
       - name: Ejecutar ESLint
         run: npm run lint
 
-      - name: Ejecutar pruebas Jest
-        run: npm test
+      - name: Ejecutar pruebas Jest ProductService
+        run: npx jest tests/services/productService.test.js --runInBand

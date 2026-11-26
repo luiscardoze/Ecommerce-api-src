@@ -1,7 +1,0 @@
-
-{
-  "testEnvironment": "node",
-  "testMatch": [
-    "**/tests/services/productService.test.js"
-  ]
-}

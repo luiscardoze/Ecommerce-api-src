@@ -2,3 +2,6 @@ node_modules/
 coverage/
 reports/
 .DS_Store
+git rm -r --cached .stryker-tmp
+# Archivos temporales de Stryker
+.stryker-tmp/

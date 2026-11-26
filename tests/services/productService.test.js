@@ -29,6 +29,7 @@ jest.mock('../../models/category', () => ({
 const ProductService = require('../../services/productService');
 const Product = require('../../models/product');
 const Category = require('../../models/category');
+const { Op } = require('sequelize');
 
 // ======================================================
 // 3. SUITE PRINCIPAL
@@ -244,6 +245,66 @@ describe('ProductService', () => {
       expect(Product.findAll).toHaveBeenCalled();
     });
 
+    it('should build the correct query with categories, sorting and pagination', async () => {
+      const mockProducts = [
+        { id: 1, name: 'Laptop', categoryId: 1 },
+        { id: 2, name: 'Mouse', categoryId: 2 }
+      ];
+
+      Product.findAll.mockResolvedValue(mockProducts);
+
+      const result = await ProductService.getProductsByCategories('1,2', {
+        sort: 'price,DESC',
+        limit: '5',
+        offset: '10'
+      });
+
+      expect(result).toEqual(mockProducts);
+
+      expect(Product.findAll).toHaveBeenCalledWith({
+        where: {
+          categoryId: {
+            [Op.in]: [1, 2]
+          }
+        },
+        include: Category,
+        order: [['price', 'DESC']],
+        limit: 5,
+        offset: 10
+      });
+    });
+    it('should not include sorting or pagination when options are omitted', async () => {
+      Product.findAll.mockResolvedValue([]);
+
+      await ProductService.getProductsByCategories('1,2');
+
+      expect(Product.findAll).toHaveBeenCalledWith({
+        where: {
+          categoryId: {
+            [Op.in]: [1, 2]
+          }
+        },
+        include: Category
+      });
+    });
+
+    it('should apply sorting without pagination when only sort is provided', async () => {
+      Product.findAll.mockResolvedValue([]);
+
+      await ProductService.getProductsByCategories('1,2', {
+        sort: 'name,ASC'
+      });
+
+      expect(Product.findAll).toHaveBeenCalledWith({
+        where: {
+          categoryId: {
+            [Op.in]: [1, 2]
+          }
+        },
+        include: Category,
+        order: [['name', 'ASC']]
+      });
+    });
 
   });
 
@@ -253,6 +314,53 @@ describe('ProductService', () => {
   // ====================================================
 
   describe('updateProduct', () => {
+
+    it('should update a product when the new category exists', async () => {
+      const mockCategory = {
+        id: 2,
+        name: 'Electronics'
+      };
+
+      Category.findByPk.mockResolvedValue(mockCategory);
+      Product.update.mockResolvedValue([1]);
+
+      const productData = {
+        name: 'Laptop actualizado',
+        categoryId: 2
+      };
+
+      const result = await ProductService.updateProduct(1, productData);
+
+      // Comprueba que se valide la categoría nueva.
+      expect(Category.findByPk).toHaveBeenCalledWith(2);
+
+      // Comprueba que se actualice el producto.
+      expect(Product.update).toHaveBeenCalledWith(
+        productData,
+        { where: { id: 1 } }
+      );
+
+      expect(result).toEqual([1]);
+    });
+
+    it('should reject when the new category does not exist', async () => {
+      Category.findByPk.mockResolvedValue(null);
+
+      const productData = {
+        name: 'Laptop actualizado',
+        categoryId: 9999
+      };
+
+      await expect(
+        ProductService.updateProduct(1, productData)
+      ).rejects.toThrow(
+        'Category with id 9999 does not exist'
+      );
+
+      // No debe actualizarse el producto.
+      expect(Product.update).not.toHaveBeenCalled();
+    });
+
 
     it('should update a product', async () => {
 
@@ -273,7 +381,7 @@ describe('ProductService', () => {
       expect(result).toEqual([1]);
     });
 
-    it('should reject when the categories parameter is empty', async () => {
+    it('should reject when the categories parameter is empty in getProductsByCategories', async () => {
       // La ausencia del parámetro produce una lista de categorías vacía.
       await expect(
         ProductService.getProductsByCategories('')
@@ -307,6 +415,6 @@ describe('ProductService', () => {
       expect(result).toBe(1);
     });
   });
-  
+
 
 });

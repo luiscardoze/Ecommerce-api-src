@@ -1,0 +1,6 @@
+{
+  "testEnvironment": "node",
+  "testMatch": [
+    "**/tests/services/productService.model.reviewed.test.js"
+  ]
+}
